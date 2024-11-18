@@ -1,4 +1,4 @@
-import math, secrets
+import math, secrets, sqlite3
 from flask import Flask
 from flask import abort, flash, make_response, redirect, render_template, request, session
 import markupsafe
@@ -86,8 +86,9 @@ def new_message():
 
     try:
         forum.add_message(content, user_id, thread_id)
-    except:
+    except sqlite3.IntegrityError:
         abort(403)
+
     return redirect("/thread/" + str(thread_id))
 
 @app.route("/edit/<int:message_id>", methods=["GET", "POST"])
@@ -144,10 +145,11 @@ def register():
             filled = {"username": username}
             return render_template("register.html", filled=filled)
 
-        if users.create_user(username, password1):
+        try:
+            users.create_user(username, password1)
             flash("Tunnuksen luominen onnistui, voit nyt kirjautua sisään")
             return redirect("/")
-        else:
+        except sqlite3.IntegrityError:
             flash("VIRHE: Valitsemasi tunnus on jo varattu")
             filled = {"username": username}
             return render_template("register.html", filled=filled)
